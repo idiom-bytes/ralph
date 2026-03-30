@@ -20,7 +20,7 @@ RALPH_VERIFY="pytest && mypy ." ./loop.sh
 ## What's in the box
 
 ```
-loop.sh                          # Ralph loop (SNAPSHOT → EXECUTE → VERIFY → COMMIT/ROLLBACK)
+loop.sh                          # Ralph loop (EXECUTE → VERIFY → COMMIT+PUSH or retry)
 ralph/
 ├── PROMPT_build.md              # Build mode prompt
 ├── PROMPT_plan.md               # Planning mode prompt
@@ -30,15 +30,14 @@ ralph/
 
 ## Loop states
 
-Each iteration: **SNAPSHOT → EXECUTE → VERIFY → COMMIT or ROLLBACK**
+Each iteration: **EXECUTE → VERIFY → COMMIT+PUSH or keep iterating**
 
-1. **SNAPSHOT** — record HEAD before the agent runs
-2. **EXECUTE** — run the agent (claude/codex) in a firejail sandbox
-3. **VERIFY** — run `RALPH_VERIFY` command independently (if set)
-4. **COMMIT + PUSH** — if verify passes (or not set), commit and push
-5. **ROLLBACK** — if verify fails, discard all agent changes, try again
+1. **EXECUTE** — run the agent (claude/codex) in a firejail sandbox
+2. **VERIFY** — run `RALPH_VERIFY` command independently (if set)
+3. **Pass → COMMIT + PUSH** — tests prove it worked, push to remote
+4. **Fail → COMMIT, no push** — keep changes, next iteration fixes the failures
 
-Set `RALPH_VERIFY` to enable the verification gate. Without it, the loop trusts the agent.
+No rollback. The agent's work is preserved. Eventual consistency through iteration — let Ralph ralph.
 
 Halts after 3 consecutive verification failures (configurable via `MAX_CONSECUTIVE_FAILURES`).
 

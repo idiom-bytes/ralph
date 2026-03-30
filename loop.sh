@@ -3,7 +3,7 @@
 # Supports firejail sandboxing to limit blast radius of autonomous agents.
 #
 # Loop states per iteration:
-#   SNAPSHOT → EXECUTE → VERIFY → (pass: COMMIT+PUSH | fail: ROLLBACK)
+#   EXECUTE → VERIFY → (pass: COMMIT+PUSH | fail: COMMIT, no push, next iteration fixes it)
 #
 # Usage: ./loop.sh [claude|codex] [plan|build] [max_iterations] [--no-sandbox]
 # Examples:
@@ -204,12 +204,6 @@ run_sandboxed() {
 
 # ─── Loop stages ───────────────────────────────────────────────────────────
 
-# SNAPSHOT: Record the clean state before the agent runs
-snapshot() {
-    SNAPSHOT_HEAD="$(git rev-parse HEAD)"
-    echo "[SNAPSHOT] HEAD=$SNAPSHOT_HEAD"
-}
-
 # EXECUTE: Run the agent
 execute() {
     echo "[EXECUTE] Running $AGENT..."
@@ -219,9 +213,10 @@ execute() {
 }
 
 # VERIFY: Run verification independently — the agent doesn't grade its own homework
+# Returns 0 (pass) or 1 (fail). Failure does NOT rollback — the agent keeps its
+# changes and the next iteration can see the failures and fix them.
 verify() {
     if [ -z "$RALPH_VERIFY" ]; then
-        # No verify command — trust the agent (ghuntley-style)
         return 0
     fi
 
@@ -230,14 +225,13 @@ verify() {
         echo "[VERIFY] PASSED"
         return 0
     else
-        echo "[VERIFY] FAILED"
+        echo "[VERIFY] FAILED — changes preserved for next iteration to fix"
         return 1
     fi
 }
 
 # COMMIT: Stage and commit agent's changes
 commit_changes() {
-    # Check if there are any changes to commit
     if git diff --quiet HEAD && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
         echo "[COMMIT] No changes to commit."
         return 1
@@ -260,20 +254,6 @@ push_changes() {
     }
 }
 
-# ROLLBACK: Discard all agent changes, return to snapshot
-rollback() {
-    echo "[ROLLBACK] Discarding changes from iteration $ITERATION..."
-    git checkout -- . 2>/dev/null || true
-    git clean -fd 2>/dev/null || true
-
-    # If agent made commits, reset to snapshot
-    if [ "$(git rev-parse HEAD)" != "$SNAPSHOT_HEAD" ]; then
-        git reset --hard "$SNAPSHOT_HEAD"
-    fi
-
-    echo "[ROLLBACK] Restored to $SNAPSHOT_HEAD"
-}
-
 # ─── Main loop ──────────────────────────────────────────────────────────────
 AGENT_CMD="$(build_agent_cmd)"
 
@@ -286,28 +266,27 @@ while true; do
     ITERATION=$((ITERATION + 1))
     echo -e "\n======================== ITERATION $ITERATION ========================\n"
 
-    # ── SNAPSHOT ──
-    snapshot
-
     # ── EXECUTE ──
     execute
 
     # ── VERIFY ──
     if verify; then
-        # ── COMMIT + PUSH ──
+        # ── COMMIT + PUSH (verification passed) ──
         if commit_changes; then
             push_changes
             CONSECUTIVE_FAILURES=0
-            echo "[DONE] Iteration $ITERATION complete."
+            echo "[DONE] Iteration $ITERATION verified and pushed."
         else
             echo "[SKIP] No changes produced in iteration $ITERATION."
             CONSECUTIVE_FAILURES=0
         fi
     else
-        # ── ROLLBACK ──
-        rollback
+        # ── COMMIT but don't push (verification failed) ──
+        # Keep the changes — next iteration sees the failures and can fix them.
+        # This is "let Ralph ralph" — eventual consistency through iteration.
+        commit_changes || true
         CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
-        echo "[FAIL] Iteration $ITERATION failed verification ($CONSECUTIVE_FAILURES/$MAX_CONSECUTIVE_FAILURES)."
+        echo "[FAIL] Iteration $ITERATION failed verification ($CONSECUTIVE_FAILURES/$MAX_CONSECUTIVE_FAILURES). Changes kept for next iteration."
 
         if [ $CONSECUTIVE_FAILURES -ge $MAX_CONSECUTIVE_FAILURES ]; then
             echo "Halting: $MAX_CONSECUTIVE_FAILURES consecutive verification failures."
