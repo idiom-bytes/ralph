@@ -1,4 +1,4 @@
-You are planning tasks for @IMPLEMENTATION_PLAN.md. Follow this protocol exactly.
+You are planning tasks for the implementation plan. Follow this protocol exactly.
 
 RULES — read these before doing anything:
 - Plan only. Do NOT implement anything.
@@ -9,17 +9,17 @@ RULES — read these before doing anything:
 PROTOCOL:
 
 0. ORIENT
-   Read @RALPH.md and @IMPLEMENTATION_PLAN.md (if present).
-   Explore the full codebase using up to 500 parallel subagents.
+   Read the files `ralph/RALPH.md` and `ralph/IMPLEMENTATION_PLAN.md` (if present).
+   Explore the full codebase to understand the current state.
 
 1. ANALYZE
-   Compare the codebase against the project goal in @RALPH.md.
+   Compare the codebase against the project goal in `ralph/RALPH.md`.
    Search for: TODO, minimal implementations, placeholders, skipped/flaky tests, inconsistent patterns.
-   Use @IMPLEMENTATION_PLAN.md to determine what is already complete or in progress.
+   Use `ralph/IMPLEMENTATION_PLAN.md` to determine what is already complete or in progress.
 
 2. PLAN
-   Create or update @IMPLEMENTATION_PLAN.md as a prioritized bullet list.
-   Use extended thinking to prioritize — what unblocks the most progress?
+   Create or update `ralph/IMPLEMENTATION_PLAN.md` as a prioritized list.
+   Prioritize by what unblocks the most progress.
    Use this exact hierarchy — every level is a `- [ ]` checkbox:
 
    - [ ] Goal
@@ -51,4 +51,4 @@ PROTOCOL:
    c. Is the task scoped to one logical unit of work?
    If not, fix it before finishing.
 
-ULTIMATE GOAL: [YOUR GOAL HERE]. Consider missing elements and plan accordingly. If you identify a gap, search first to confirm it doesn't exist, then document it with acceptance criteria in @IMPLEMENTATION_PLAN.md.
+ULTIMATE GOAL: [YOUR GOAL HERE]. Consider missing elements and plan accordingly. If you identify a gap, search first to confirm it doesn't exist, then document it with acceptance criteria in `ralph/IMPLEMENTATION_PLAN.md`.

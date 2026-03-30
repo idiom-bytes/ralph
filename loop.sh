@@ -111,6 +111,10 @@ ITERATION=0
 CONSECUTIVE_FAILURES=0
 MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-3}"
 CURRENT_BRANCH=$(git branch --show-current)
+if [ -z "$CURRENT_BRANCH" ]; then
+    echo "Error: detached HEAD — checkout a branch before running the loop."
+    exit 1
+fi
 
 # Resolve node bin path once (for firejail PATH injection)
 NODE_BIN_DIR=""
@@ -138,9 +142,7 @@ build_agent_cmd() {
     if [ "$AGENT" = "claude" ]; then
         echo "cat '$PROMPT_FILE' | claude -p \
             --dangerously-skip-permissions \
-            --output-format=stream-json \
-            --model $CLAUDE_MODEL \
-            --verbose"
+            --model $CLAUDE_MODEL"
     else
         echo "cat '$PROMPT_FILE' | codex exec \
             -m $CODEX_MODEL \

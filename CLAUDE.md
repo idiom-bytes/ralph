@@ -6,7 +6,7 @@ Methodology: https://github.com/ghuntley/how-to-ralph-wiggum
 
 ## Structure
 
-- `loop.sh` — State machine: SNAPSHOT → EXECUTE → VERIFY → COMMIT/ROLLBACK. Runs agent in firejail, verifies independently via `RALPH_VERIFY` env var, only commits+pushes if verification passes. Rolls back on failure.
+- `loop.sh` — Loop: EXECUTE → VERIFY → COMMIT+PUSH (or keep iterating on failure). Runs agent in firejail, verifies independently via `RALPH_VERIFY` env var. Only pushes verified iterations. No rollback — failed iterations keep changes for the next iteration to fix.
 - `ralph/PROMPT_build.md` — Build mode: pick top task, verify acceptance criteria exist, implement, validate.
 - `ralph/PROMPT_plan.md` — Plan mode: gap-analyze codebase against goals, generate tasks with acceptance criteria.
 - `ralph/RALPH.md` — Project goal + operational guide: build/test/lint commands, codebase patterns. Keep brief (~60 lines).
