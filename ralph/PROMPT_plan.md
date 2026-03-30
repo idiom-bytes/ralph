@@ -19,7 +19,12 @@ PROTOCOL:
 
 2. PLAN
    Create or update `ralph/IMPLEMENTATION_PLAN.md` as a prioritized list.
-   Prioritize by what unblocks the most progress.
+   Prioritize in this order:
+   1. Architectural decisions and core abstractions (these stay forever — get them right first)
+   2. Integration points between modules (where things connect breaks first)
+   3. Unknowns and spike work (de-risk before building on assumptions)
+   4. Standard features and implementation
+   5. Polish, cleanup, and quick wins (last — never before the hard stuff)
    Use this exact hierarchy — every level is a `- [ ]` checkbox:
 
    - [ ] Goal
