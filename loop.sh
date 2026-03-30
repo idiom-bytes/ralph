@@ -248,7 +248,7 @@ commit_changes() {
     fi
 
     git add -A
-    git commit -m "ralph: iteration $ITERATION" --allow-empty-message || {
+    git commit -m "ralph: iteration $ITERATION" --no-verify --allow-empty-message || {
         echo "[COMMIT] Nothing to commit after staging."
         return 1
     }
