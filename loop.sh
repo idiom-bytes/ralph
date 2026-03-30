@@ -220,7 +220,6 @@ run_sandboxed() {
         --whitelist="$HOME/.claude" \
         --read-only="$HOME/.claude" \
         --whitelist="$HOME/.codex" \
-        --read-only="$HOME/.codex" \
         --whitelist="$HOME/.anthropic" \
         --read-only="$HOME/.anthropic" \
         --whitelist="$HOME/.openai" \
