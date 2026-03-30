@@ -16,9 +16,10 @@ PROTOCOL:
    Explore the codebase using up to 500 parallel subagents.
 
 1. SELECT
-   Pick the highest-priority incomplete task (unchecked `- [ ]`) from @IMPLEMENTATION_PLAN.md.
+   Pick the highest-priority incomplete task (3rd-level unchecked `- [ ]`) from @IMPLEMENTATION_PLAN.md.
+   Tasks are nested under goals and epics: Goal → Epic → Task → Acceptance Criteria.
    State which task you selected and why.
-   If the task has no acceptance criteria, STOP and add them before doing anything else.
+   If the task has no acceptance criteria (4th-level checkboxes), STOP and add them before doing anything else.
 
 2. INVESTIGATE
    Search the codebase for existing implementations related to this task.

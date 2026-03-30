@@ -20,19 +20,24 @@ PROTOCOL:
 2. PLAN
    Create or update @IMPLEMENTATION_PLAN.md as a prioritized bullet list.
    Use extended thinking to prioritize — what unblocks the most progress?
-   Each task MUST follow this format:
+   Use this exact hierarchy — every level is a `- [ ]` checkbox:
 
-   - [ ] Task description (what needs to be done)
-     - [ ] Acceptance criterion (specific verifiable outcome)
-     - [ ] Acceptance criterion (edge case or constraint)
-     - [ ] Acceptance criterion (what must NOT break)
+   - [ ] Goal
+     - [ ] Epic
+       - [ ] Task
+         - [ ] Acceptance criterion
+         - [ ] Acceptance criterion
 
    Example:
-   - [ ] Users can register and update their profile
-     - [ ] Empty form submission shows validation errors
-     - [ ] Duplicate email returns clear error message
-     - [ ] Users cannot change email after registration
-     - [ ] Profile updates persist across sessions
+   - [ ] User authentication system
+     - [ ] User registration
+       - [ ] Implement registration endpoint
+         - [ ] Empty form returns 400 with validation errors
+         - [ ] Duplicate email returns 409 with clear message
+         - [ ] Successful registration returns 201 with user ID
+       - [ ] Implement email verification
+         - [ ] Verification email sent within 5 seconds of registration
+         - [ ] Expired token returns 410 with re-send option
 
    Bad criteria (do not write these):
    - [ ] Registration works
