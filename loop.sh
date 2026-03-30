@@ -10,6 +10,9 @@
 #   ./loop.sh codex build 10     # Codex, build mode, sandboxed, 10 iterations
 #   ./loop.sh --no-sandbox       # Claude, build mode, NO sandbox, unlimited
 #   RALPH_AGENT=codex ./loop.sh  # Codex via env var
+#
+# WARNING: --no-sandbox disables ALL filesystem protection. The agent can
+# read/write anything your user can. Only use for debugging.
 
 set -euo pipefail
 
@@ -84,6 +87,10 @@ if [ "$SANDBOX" = true ] && ! command -v firejail &>/dev/null; then
     SANDBOX=false
 fi
 
+if [ "$SANDBOX" = false ]; then
+    echo "WARNING: Running without sandbox — agent has full filesystem access."
+fi
+
 if [ ! -f "$PROMPT_FILE" ]; then
     echo "Error: $PROMPT_FILE not found"
     exit 1
@@ -95,6 +102,12 @@ CODEX_MODEL="${CODEX_MODEL:-o3}"
 
 ITERATION=0
 CURRENT_BRANCH=$(git branch --show-current)
+
+# Resolve node bin path once (for firejail PATH injection)
+NODE_BIN_DIR=""
+if command -v node &>/dev/null; then
+    NODE_BIN_DIR="$(dirname "$(command -v node)")"
+fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Project:  $(basename "$PROJ_DIR")"
@@ -130,6 +143,13 @@ build_agent_cmd() {
 # With --noprofile, once ANY --whitelist is used, firejail switches to
 # whitelist mode: ONLY whitelisted paths are visible under $HOME.
 # --read-only must come AFTER its corresponding --whitelist.
+#
+# Security model:
+#   - Project dir: read-write (agent's workspace)
+#   - Tool binaries: read-only (claude, codex, node, git)
+#   - API keys / configs: read-only
+#   - SSH keys: read-only (for git push)
+#   - Everything else under $HOME: blocked
 run_sandboxed() {
     local cmd="$1"
 
@@ -138,12 +158,15 @@ run_sandboxed() {
         return $?
     fi
 
+    # Build PATH for inside the sandbox
+    local SANDBOX_PATH="$HOME/.local/bin"
+    [ -n "$NODE_BIN_DIR" ] && SANDBOX_PATH="$SANDBOX_PATH:$NODE_BIN_DIR"
+    SANDBOX_PATH="$SANDBOX_PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
     firejail \
         --noprofile \
         --quiet \
         --whitelist="$PROJ_DIR" \
-        --whitelist="$HOME/.config" \
-        --read-only="$HOME/.config" \
         --whitelist="$HOME/.claude" \
         --read-only="$HOME/.claude" \
         --whitelist="$HOME/.codex" \
@@ -155,17 +178,17 @@ run_sandboxed() {
         --whitelist="$HOME/.nvm" \
         --read-only="$HOME/.nvm" \
         --whitelist="$HOME/.local" \
-        --read-only="$HOME/.local" \
+        --read-only="$HOME/.local/bin" \
+        --read-only="$HOME/.local/share/claude" \
         --whitelist="$HOME/.gitconfig" \
         --read-only="$HOME/.gitconfig" \
         --whitelist="$HOME/.ssh" \
         --read-only="$HOME/.ssh" \
-        --whitelist="$HOME/.cache" \
         --noroot \
         --caps.drop=all \
         --nonewprivs \
         --seccomp \
-        --env=PATH="$HOME/.local/bin:$HOME/.nvm/versions/node/$(node -v 2>/dev/null || echo v22)/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+        --env=PATH="$SANDBOX_PATH" \
         -- bash -c "$cmd"
 }
 
@@ -186,7 +209,7 @@ while true; do
     }
 
     # Push changes after each iteration
-    git push origin "$CURRENT_BRANCH" 2>/dev/null || {
+    git push origin "$CURRENT_BRANCH" || {
         echo "Failed to push. Creating remote branch..."
         git push -u origin "$CURRENT_BRANCH" || true
     }

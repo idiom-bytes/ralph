@@ -1,8 +1,8 @@
 0a. Study the project by reading @RALPH.md and @IMPLEMENTATION_PLAN.md.
-0b. Explore the codebase using parallel Sonnet subagents to understand the current state.
+0b. Explore the codebase using parallel subagents to understand the current state.
 
-1. Choose the most important task from @IMPLEMENTATION_PLAN.md. Before making changes, search the codebase (don't assume not implemented) using Sonnet subagents. You may use up to 500 parallel Sonnet subagents for searches/reads and only 1 Sonnet subagent for build/tests. Use Opus subagents when complex reasoning is needed (debugging, architectural decisions).
-2. If the task has no acceptance criteria, add them before implementing. Every task must have observable acceptance criteria that prove correctness — not just "it works" but specific behaviors, edge cases, and constraints.
+1. Choose the most important task from @IMPLEMENTATION_PLAN.md. Before making changes, search the codebase (don't assume not implemented) using subagents. Use up to 500 parallel subagents for searches/reads and only 1 subagent for build/tests. Use extended thinking when complex reasoning is needed (debugging, architectural decisions).
+2. If the task has no acceptance criteria, add them before implementing. Every task must have observable acceptance criteria that prove correctness — not "it works" but specific behaviors, edge cases, and constraints.
 3. Implement the task. If functionality is missing then it's your job to add it per the project goal in @RALPH.md. Ultrathink.
 4. Verify EVERY acceptance criterion for the task. Run the build/test/lint commands from @RALPH.md. A task is not done until all criteria checkboxes AND all mechanical checks pass.
 5. When all checks pass, check off the completed criteria and task in @IMPLEMENTATION_PLAN.md, then `git add -A` then `git commit` with a message describing the changes. After the commit, `git push`.
@@ -16,5 +16,5 @@
 99999999999. For any bugs you notice, resolve them or document them in @IMPLEMENTATION_PLAN.md using a subagent even if it is unrelated to the current piece of work.
 999999999999. Implement functionality completely. Placeholders and stubs waste efforts and time redoing the same work.
 9999999999999. When @IMPLEMENTATION_PLAN.md becomes large periodically clean out completed items using a subagent.
-99999999999999. If you find inconsistencies between code and the project goal in @RALPH.md, use an Opus subagent with 'ultrathink' to update @RALPH.md.
+99999999999999. If you find inconsistencies between code and the project goal in @RALPH.md, use extended thinking to update @RALPH.md.
 999999999999999. IMPORTANT: Keep @RALPH.md operational only — status updates and progress notes belong in `IMPLEMENTATION_PLAN.md`. A bloated RALPH.md pollutes every future loop's context.
