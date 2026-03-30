@@ -2,6 +2,9 @@
 # Ralph Loop — runs Claude or Codex iteratively on a research/build task
 # Supports firejail sandboxing to limit blast radius of autonomous agents.
 #
+# Loop states per iteration:
+#   SNAPSHOT → EXECUTE → VERIFY → (pass: COMMIT+PUSH | fail: ROLLBACK)
+#
 # Usage: ./loop.sh [claude|codex] [plan|build] [max_iterations] [--no-sandbox]
 # Examples:
 #   ./loop.sh                    # Claude, build mode, sandboxed, unlimited
@@ -100,7 +103,13 @@ fi
 CLAUDE_MODEL="${CLAUDE_MODEL:-opus}"
 CODEX_MODEL="${CODEX_MODEL:-o3}"
 
+# Verification gate: set to your test command to enable
+# Example: RALPH_VERIFY="pytest && mypy . && ruff check" ./loop.sh
+RALPH_VERIFY="${RALPH_VERIFY:-}"
+
 ITERATION=0
+CONSECUTIVE_FAILURES=0
+MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-3}"
 CURRENT_BRANCH=$(git branch --show-current)
 
 # Resolve node bin path once (for firejail PATH injection)
@@ -115,6 +124,7 @@ echo "Mode:     $MODE"
 echo "Prompt:   $(basename "$PROMPT_FILE")"
 echo "Branch:   $CURRENT_BRANCH"
 echo "Sandbox:  $SANDBOX"
+[ -n "$RALPH_VERIFY" ] && echo "Verify:   $RALPH_VERIFY"
 if [ "$AGENT" = "claude" ]; then
     echo "Agent:    claude -p (--model $CLAUDE_MODEL)"
 else
@@ -192,6 +202,78 @@ run_sandboxed() {
         -- bash -c "$cmd"
 }
 
+# ─── Loop stages ───────────────────────────────────────────────────────────
+
+# SNAPSHOT: Record the clean state before the agent runs
+snapshot() {
+    SNAPSHOT_HEAD="$(git rev-parse HEAD)"
+    echo "[SNAPSHOT] HEAD=$SNAPSHOT_HEAD"
+}
+
+# EXECUTE: Run the agent
+execute() {
+    echo "[EXECUTE] Running $AGENT..."
+    run_sandboxed "$AGENT_CMD" || {
+        echo "[EXECUTE] Agent exited non-zero; checking for changes..."
+    }
+}
+
+# VERIFY: Run verification independently — the agent doesn't grade its own homework
+verify() {
+    if [ -z "$RALPH_VERIFY" ]; then
+        # No verify command — trust the agent (ghuntley-style)
+        return 0
+    fi
+
+    echo "[VERIFY] Running: $RALPH_VERIFY"
+    if eval "$RALPH_VERIFY"; then
+        echo "[VERIFY] PASSED"
+        return 0
+    else
+        echo "[VERIFY] FAILED"
+        return 1
+    fi
+}
+
+# COMMIT: Stage and commit agent's changes
+commit_changes() {
+    # Check if there are any changes to commit
+    if git diff --quiet HEAD && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+        echo "[COMMIT] No changes to commit."
+        return 1
+    fi
+
+    git add -A
+    git commit -m "ralph: iteration $ITERATION" --allow-empty-message || {
+        echo "[COMMIT] Nothing to commit after staging."
+        return 1
+    }
+    echo "[COMMIT] Changes committed."
+    return 0
+}
+
+# PUSH: Push to remote
+push_changes() {
+    git push origin "$CURRENT_BRANCH" || {
+        echo "[PUSH] Failed to push. Creating remote branch..."
+        git push -u origin "$CURRENT_BRANCH" || true
+    }
+}
+
+# ROLLBACK: Discard all agent changes, return to snapshot
+rollback() {
+    echo "[ROLLBACK] Discarding changes from iteration $ITERATION..."
+    git checkout -- . 2>/dev/null || true
+    git clean -fd 2>/dev/null || true
+
+    # If agent made commits, reset to snapshot
+    if [ "$(git rev-parse HEAD)" != "$SNAPSHOT_HEAD" ]; then
+        git reset --hard "$SNAPSHOT_HEAD"
+    fi
+
+    echo "[ROLLBACK] Restored to $SNAPSHOT_HEAD"
+}
+
 # ─── Main loop ──────────────────────────────────────────────────────────────
 AGENT_CMD="$(build_agent_cmd)"
 
@@ -204,17 +286,34 @@ while true; do
     ITERATION=$((ITERATION + 1))
     echo -e "\n======================== ITERATION $ITERATION ========================\n"
 
-    run_sandboxed "$AGENT_CMD" || {
-        echo "Agent iteration $ITERATION failed; continuing..."
-    }
+    # ── SNAPSHOT ──
+    snapshot
 
-    # Push changes after each iteration
-    git push origin "$CURRENT_BRANCH" || {
-        echo "Failed to push. Creating remote branch..."
-        git push -u origin "$CURRENT_BRANCH" || true
-    }
+    # ── EXECUTE ──
+    execute
 
-    echo "Iteration $ITERATION complete."
+    # ── VERIFY ──
+    if verify; then
+        # ── COMMIT + PUSH ──
+        if commit_changes; then
+            push_changes
+            CONSECUTIVE_FAILURES=0
+            echo "[DONE] Iteration $ITERATION complete."
+        else
+            echo "[SKIP] No changes produced in iteration $ITERATION."
+            CONSECUTIVE_FAILURES=0
+        fi
+    else
+        # ── ROLLBACK ──
+        rollback
+        CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
+        echo "[FAIL] Iteration $ITERATION failed verification ($CONSECUTIVE_FAILURES/$MAX_CONSECUTIVE_FAILURES)."
+
+        if [ $CONSECUTIVE_FAILURES -ge $MAX_CONSECUTIVE_FAILURES ]; then
+            echo "Halting: $MAX_CONSECUTIVE_FAILURES consecutive verification failures."
+            break
+        fi
+    fi
 done
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
