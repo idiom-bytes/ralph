@@ -1,19 +1,50 @@
-0a. Study the project by reading @RALPH.md and @IMPLEMENTATION_PLAN.md.
-0b. Explore the codebase using parallel subagents to understand the current state.
+You are executing ONE task from @IMPLEMENTATION_PLAN.md. Follow this protocol exactly.
 
-1. Choose the most important task from @IMPLEMENTATION_PLAN.md. Before making changes, search the codebase (don't assume not implemented) using subagents. Use up to 500 parallel subagents for searches/reads and only 1 subagent for build/tests. Use extended thinking when complex reasoning is needed (debugging, architectural decisions).
-2. If the task has no acceptance criteria, add them before implementing. Every task must have observable acceptance criteria that prove correctness — not "it works" but specific behaviors, edge cases, and constraints.
-3. Implement the task. If functionality is missing then it's your job to add it per the project goal in @RALPH.md. Ultrathink.
-4. Verify EVERY acceptance criterion for the task. Run the build/test/lint commands from @RALPH.md. A task is not done until all criteria checkboxes AND all mechanical checks pass.
-5. When all checks pass, check off the completed criteria and task in @IMPLEMENTATION_PLAN.md. Do NOT git commit or push — the loop handles that after independent verification.
+RULES — read these before doing anything:
+- Implement ONLY one task per iteration. Do not combine tasks.
+- Do NOT skip acceptance criteria. Every criterion must be verified.
+- Do NOT remove or weaken existing acceptance criteria.
+- Do NOT mark a task done unless every criterion checkbox is checked.
+- Do NOT git commit or push — the loop handles that after independent verification.
+- Search the codebase before implementing — do not assume functionality is missing.
+- Implement completely. No placeholders, no stubs, no "TODO later".
 
-99999. Important: When authoring documentation, capture the why — tests and implementation importance.
-999999. Important: Single sources of truth, no migrations/adapters. If tests unrelated to your work fail, resolve them as part of the increment.
-9999999. You may add extra logging if required to debug issues.
-99999999. Keep @IMPLEMENTATION_PLAN.md current with learnings using a subagent — future work depends on this to avoid duplicating efforts. Update especially after finishing your turn.
-999999999. When you learn something new about how to run the application, update @RALPH.md using a subagent but keep it brief.
-9999999999. For any bugs you notice, resolve them or document them in @IMPLEMENTATION_PLAN.md using a subagent even if it is unrelated to the current piece of work.
-99999999999. Implement functionality completely. Placeholders and stubs waste efforts and time redoing the same work.
-999999999999. When @IMPLEMENTATION_PLAN.md becomes large periodically clean out completed items using a subagent.
-9999999999999. If you find inconsistencies between code and the project goal in @RALPH.md, use extended thinking to update @RALPH.md.
-99999999999999. IMPORTANT: Keep @RALPH.md operational only — status updates and progress notes belong in `IMPLEMENTATION_PLAN.md`. A bloated RALPH.md pollutes every future loop's context.
+PROTOCOL:
+
+0. ORIENT
+   Read @RALPH.md and @IMPLEMENTATION_PLAN.md.
+   Explore the codebase using up to 500 parallel subagents.
+
+1. SELECT
+   Pick the highest-priority incomplete task (unchecked `- [ ]`) from @IMPLEMENTATION_PLAN.md.
+   State which task you selected and why.
+   If the task has no acceptance criteria, STOP and add them before doing anything else.
+
+2. INVESTIGATE
+   Search the codebase for existing implementations related to this task.
+   Do not assume it is missing — confirm with code search first.
+   Use subagents for searches/reads. Use extended thinking for complex reasoning.
+
+3. IMPLEMENT
+   Make the changes required for this ONE task.
+   If functionality is missing, add it per the project goal in @RALPH.md.
+
+4. VERIFY
+   For EACH acceptance criterion under the task, do the following:
+   a. Run the specific check that proves this criterion is met.
+   b. Confirm it passes.
+   c. Check off the criterion in @IMPLEMENTATION_PLAN.md.
+   Then run ALL build/test/lint commands from @RALPH.md.
+   Do not check off the task until every criterion AND every mechanical check passes.
+
+5. UPDATE
+   Check off the task in @IMPLEMENTATION_PLAN.md.
+   Add any learnings or discoveries as notes.
+   If you found bugs unrelated to this task, document them as new tasks with acceptance criteria.
+
+ONGOING RULES:
+- Keep @RALPH.md operational and brief (~60 lines). Status updates go in @IMPLEMENTATION_PLAN.md.
+- When you learn something new about how to build/run the project, update @RALPH.md.
+- When @IMPLEMENTATION_PLAN.md grows large, clean out completed items.
+- If tests unrelated to your task fail, fix them as part of this iteration.
+- If you find inconsistencies between code and @RALPH.md, update @RALPH.md.
