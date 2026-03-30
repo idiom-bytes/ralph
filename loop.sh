@@ -116,6 +116,14 @@ if [ -z "$CURRENT_BRANCH" ]; then
     exit 1
 fi
 
+# Guard: don't sweep stale changes into the first ralph commit
+if [ -n "$(git status --porcelain)" ]; then
+    echo "Error: working tree is dirty. Commit or stash your changes first."
+    echo "       Ralph commits after each iteration — stale changes would be included."
+    git status --short
+    exit 1
+fi
+
 # Resolve node bin path once (for firejail PATH injection)
 NODE_BIN_DIR=""
 if command -v node &>/dev/null; then
