@@ -109,7 +109,7 @@ RALPH_VERIFY="${RALPH_VERIFY:-}"
 
 ITERATION=0
 CONSECUTIVE_FAILURES=0
-MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-3}"
+MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-0}"  # 0 = never halt on failures
 CURRENT_BRANCH=$(git branch --show-current)
 if [ -z "$CURRENT_BRANCH" ]; then
     echo "Error: detached HEAD — checkout a branch before running the loop."
@@ -296,9 +296,9 @@ while true; do
         # This is "let Ralph ralph" — eventual consistency through iteration.
         commit_changes || true
         CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
-        echo "[FAIL] Iteration $ITERATION failed verification ($CONSECUTIVE_FAILURES/$MAX_CONSECUTIVE_FAILURES). Changes kept for next iteration."
+        echo "[FAIL] Iteration $ITERATION failed verification (consecutive: $CONSECUTIVE_FAILURES). Changes kept for next iteration."
 
-        if [ $CONSECUTIVE_FAILURES -ge $MAX_CONSECUTIVE_FAILURES ]; then
+        if [ $MAX_CONSECUTIVE_FAILURES -gt 0 ] && [ $CONSECUTIVE_FAILURES -ge $MAX_CONSECUTIVE_FAILURES ]; then
             echo "Halting: $MAX_CONSECUTIVE_FAILURES consecutive verification failures."
             break
         fi
