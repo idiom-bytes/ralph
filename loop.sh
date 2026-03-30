@@ -108,7 +108,7 @@ fi
 
 # ─── Agent config ───────────────────────────────────────────────────────────
 CLAUDE_MODEL="${CLAUDE_MODEL:-opus}"
-CODEX_MODEL="${CODEX_MODEL:-o3}"
+CODEX_MODEL="${CODEX_MODEL:-gpt-5}"
 CODEX_BACKEND_URL="${CODEX_BACKEND_URL:-https://chatgpt.com/backend-api/codex/responses}"
 
 if [ "$AGENT" = "codex" ]; then
