@@ -1,4 +1,8 @@
-# ralph-codex
+# ralph
+
+<p align="center">
+  <img src="ralph/ralph.jpg" width="500" alt="Ralph Wiggum doing science" />
+</p>
 
 Templated [Ralph-Wiggum](https://github.com/ghuntley/how-to-ralph-wiggum) setup for autonomous AI development loops. Supports Claude and Codex, sandboxed with firejail.
 
@@ -39,7 +43,15 @@ Each iteration: **EXECUTE → VERIFY → COMMIT+PUSH or keep iterating**
 
 No rollback. The agent's work is preserved. Eventual consistency through iteration — let Ralph ralph.
 
-Halts after 3 consecutive verification failures (configurable via `MAX_CONSECUTIVE_FAILURES`).
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RALPH_AGENT` | `claude` | Agent to use (`claude` or `codex`) |
+| `CLAUDE_MODEL` | `opus` | Claude model |
+| `CODEX_MODEL` | `o3` | Codex model |
+| `RALPH_VERIFY` | *(empty)* | Test command run after agent, before commit. Empty = trust agent. |
+| `MAX_CONSECUTIVE_FAILURES` | `0` | Halt after N consecutive verification failures. 0 = never halt. |
 
 ## Learn more
 
