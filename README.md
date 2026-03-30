@@ -49,9 +49,17 @@ No rollback. The agent's work is preserved. Eventual consistency through iterati
 |----------|---------|-------------|
 | `RALPH_AGENT` | `claude` | Agent to use (`claude` or `codex`) |
 | `CLAUDE_MODEL` | `opus` | Claude model |
-| `CODEX_MODEL` | `o3` | Codex model |
+| `CODEX_MODEL` | `gpt-5` | Codex model |
+| `CODEX_BACKEND_URL` | `https://chatgpt.com/backend-api/codex/responses` | Endpoint checked before Codex runs to prevent reconnect loops on bad DNS/network |
 | `RALPH_VERIFY` | *(empty)* | Test command run after agent, before commit. Empty = trust agent. |
 | `MAX_CONSECUTIVE_FAILURES` | `0` | Halt after N consecutive verification failures. 0 = never halt. |
+| `MAX_CONSECUTIVE_EXECUTE_FAILURES` | `3` | Halt after N consecutive execute failures that produce no changes. 0 = never halt. |
+
+## Firejail Behavior
+
+- `loop.sh` defaults to firejail sandboxing.
+- If `firejail` is missing or unusable in the current environment, `loop.sh` prints a warning and falls back to `--no-sandbox`.
+- For Codex runs, `loop.sh` performs backend DNS/reachability preflight and exits early with an explicit error if connectivity is broken (instead of retrying for every iteration).
 
 ## Learn more
 
