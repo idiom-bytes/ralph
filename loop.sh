@@ -139,7 +139,7 @@ ITERATION=0
 CONSECUTIVE_FAILURES=0
 CONSECUTIVE_EXECUTE_FAILURES=0
 MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-0}"  # 0 = never halt on failures
-MAX_CONSECUTIVE_EXECUTE_FAILURES="${MAX_CONSECUTIVE_EXECUTE_FAILURES:-3}"  # 0 = never halt on execute failures
+MAX_CONSECUTIVE_EXECUTE_FAILURES="${MAX_CONSECUTIVE_EXECUTE_FAILURES:-0}"  # 0 = never halt on execute failures
 CURRENT_BRANCH=$(git branch --show-current)
 if [ -z "$CURRENT_BRANCH" ]; then
     echo "Error: detached HEAD — checkout a branch before running the loop."

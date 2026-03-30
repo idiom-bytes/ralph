@@ -30,6 +30,6 @@ Methodology: https://github.com/ghuntley/how-to-ralph-wiggum
 - `RALPH_VERIFY` — test/lint command run after agent, before commit. Empty = trust agent.
 - `RALPH_AGENT`, `CLAUDE_MODEL` (default: opus), `CODEX_MODEL` (default: gpt-5)
 - `MAX_CONSECUTIVE_FAILURES` defaults to `0` (never halt on verify failures unless configured)
-- `MAX_CONSECUTIVE_EXECUTE_FAILURES` defaults to `3` (halts after repeated execute failures with no changes)
+- `MAX_CONSECUTIVE_EXECUTE_FAILURES` defaults to `0` (never halts on repeated execute failures unless configured)
 - Codex runs preflight-check backend DNS/reachability via `CODEX_BACKEND_URL` before entering the loop
 - If firejail is unavailable or unusable, `loop.sh` warns and falls back to `--no-sandbox`

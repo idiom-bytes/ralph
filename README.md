@@ -53,7 +53,7 @@ No rollback. The agent's work is preserved. Eventual consistency through iterati
 | `CODEX_BACKEND_URL` | `https://chatgpt.com/backend-api/codex/responses` | Endpoint checked before Codex runs to prevent reconnect loops on bad DNS/network |
 | `RALPH_VERIFY` | *(empty)* | Test command run after agent, before commit. Empty = trust agent. |
 | `MAX_CONSECUTIVE_FAILURES` | `0` | Halt after N consecutive verification failures. 0 = never halt. |
-| `MAX_CONSECUTIVE_EXECUTE_FAILURES` | `3` | Halt after N consecutive execute failures that produce no changes. 0 = never halt. |
+| `MAX_CONSECUTIVE_EXECUTE_FAILURES` | `0` | Halt after N consecutive execute failures that produce no changes. 0 = never halt. |
 
 ## Firejail Behavior
 
