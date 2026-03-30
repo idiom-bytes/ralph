@@ -90,6 +90,13 @@ if [ "$SANDBOX" = true ] && ! command -v firejail &>/dev/null; then
     SANDBOX=false
 fi
 
+if [ "$SANDBOX" = true ]; then
+    if ! firejail --noprofile --quiet -- bash -lc "true" >/dev/null 2>&1; then
+        echo "Warning: firejail present but unusable in this environment — falling back to --no-sandbox"
+        SANDBOX=false
+    fi
+fi
+
 if [ "$SANDBOX" = false ]; then
     echo "WARNING: Running without sandbox — agent has full filesystem access."
 fi
@@ -102,6 +109,27 @@ fi
 # ─── Agent config ───────────────────────────────────────────────────────────
 CLAUDE_MODEL="${CLAUDE_MODEL:-opus}"
 CODEX_MODEL="${CODEX_MODEL:-o3}"
+CODEX_BACKEND_URL="${CODEX_BACKEND_URL:-https://chatgpt.com/backend-api/codex/responses}"
+
+if [ "$AGENT" = "codex" ]; then
+    CODEX_BACKEND_HOST="$(printf '%s' "$CODEX_BACKEND_URL" | awk -F/ '{print $3}')"
+
+    if command -v getent &>/dev/null && ! getent hosts "$CODEX_BACKEND_HOST" >/dev/null 2>&1; then
+        echo "Error: cannot resolve Codex backend host '$CODEX_BACKEND_HOST'."
+        echo "       This causes Codex reconnect loops. Check DNS/network and retry."
+        exit 1
+    fi
+
+    if command -v curl &>/dev/null; then
+        if ! curl -sS --max-time 10 -o /dev/null "$CODEX_BACKEND_URL"; then
+            echo "Error: Codex backend unreachable at '$CODEX_BACKEND_URL'."
+            echo "       This causes Codex reconnect loops. Check network access and retry."
+            exit 1
+        fi
+    else
+        echo "Warning: curl not found; skipping Codex backend reachability preflight."
+    fi
+fi
 
 # Verification gate: set to your test command to enable
 # Example: RALPH_VERIFY="pytest && mypy . && ruff check" ./loop.sh
@@ -109,7 +137,9 @@ RALPH_VERIFY="${RALPH_VERIFY:-}"
 
 ITERATION=0
 CONSECUTIVE_FAILURES=0
+CONSECUTIVE_EXECUTE_FAILURES=0
 MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-0}"  # 0 = never halt on failures
+MAX_CONSECUTIVE_EXECUTE_FAILURES="${MAX_CONSECUTIVE_EXECUTE_FAILURES:-3}"  # 0 = never halt on execute failures
 CURRENT_BRANCH=$(git branch --show-current)
 if [ -z "$CURRENT_BRANCH" ]; then
     echo "Error: detached HEAD — checkout a branch before running the loop."
@@ -217,9 +247,12 @@ run_sandboxed() {
 # EXECUTE: Run the agent
 execute() {
     echo "[EXECUTE] Running $AGENT..."
-    run_sandboxed "$AGENT_CMD" || {
+    if run_sandboxed "$AGENT_CMD"; then
+        return 0
+    else
         echo "[EXECUTE] Agent exited non-zero; checking for changes..."
-    }
+        return 1
+    fi
 }
 
 # VERIFY: Run verification independently — the agent doesn't grade its own homework
@@ -277,7 +310,21 @@ while true; do
     echo -e "\n======================== ITERATION $ITERATION ========================\n"
 
     # ── EXECUTE ──
-    execute
+    if execute; then
+        CONSECUTIVE_EXECUTE_FAILURES=0
+    else
+        if git diff --quiet HEAD && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            CONSECUTIVE_EXECUTE_FAILURES=$((CONSECUTIVE_EXECUTE_FAILURES + 1))
+            echo "[EXECUTE] Failed run produced no changes (consecutive: $CONSECUTIVE_EXECUTE_FAILURES)."
+
+            if [ $MAX_CONSECUTIVE_EXECUTE_FAILURES -gt 0 ] && [ $CONSECUTIVE_EXECUTE_FAILURES -ge $MAX_CONSECUTIVE_EXECUTE_FAILURES ]; then
+                echo "Halting: $MAX_CONSECUTIVE_EXECUTE_FAILURES consecutive execute failures without changes."
+                break
+            fi
+
+            continue
+        fi
+    fi
 
     # ── VERIFY ──
     if verify; then
